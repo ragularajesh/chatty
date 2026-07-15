@@ -32,6 +32,11 @@
         // Ask for username when entering the site
         const username = prompt("Enter your name to join Chatty:") || "Anonymous";
 
+        // --- Ask for permission to show notifications as soon as they log in ---
+        if ("Notification" in window) {
+            Notification.requestPermission();
+        }
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             if (input.value) {
@@ -61,6 +66,17 @@
             
             // Smoothly auto-scroll to the latest message
             window.scrollTo(0, document.body.scrollHeight);
+
+            // --- Send a system notification only if: ---
+            // 1. You are looking at a different tab (document.hidden)
+            // 2. You clicked "Allow" (Notification.permission === "granted")
+            // 3. The message was sent by someone else (data.user !== username)
+            if (document.hidden && Notification.permission === "granted" && data.user !== username) {
+                new Notification(`New message from ${data.user}`, {
+                    body: data.text,
+                    icon: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png"
+                });
+            }
         });
     </script>
 </body>
