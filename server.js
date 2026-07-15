@@ -1,21 +1,20 @@
-// server.js
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http, {
-    cors: { origin: "*" } // Allows connections from mobile devices
-});
+const io = require('socket.io')(http);
 const path = require('path');
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname)));
+// Tell Express to serve index.html and other files directly from the main folder
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 io.on('connection', (socket) => {
-    console.log('A user connected: ' + socket.id);
-
-    // Listen for incoming messages from a client
+    console.log('A user connected');
+    
     socket.on('chat message', (msg) => {
-        // Broadcast the message to EVERYONE connected
         io.emit('chat message', msg);
     });
 
@@ -24,8 +23,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start server on port 3000 (or the deployment platform's port)
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 http.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
