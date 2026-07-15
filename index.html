@@ -2,37 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatty - Live Chat</title>
-    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Small helper styles to handle the chat message area height and scrolling */
+        body {
+            background-color: #f8f9fa;
+        }
+        #messages {
+            height: 60vh;
+            overflow-y: auto;
+            list-style-type: none;
+            padding: 0;
+        }
+        /* Style message bubbles */
+        .msg-bubble {
+            max-width: 75%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+        .my-msg {
+            background-color: #0d6efd; /* Bootstrap Primary Blue */
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+        .other-msg {
+            background-color: #e9ecef; /* Bootstrap Light Gray */
+            color: #212529;
+            border-bottom-left-radius: 2px;
+        }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <header>
-            <h1>Chatty 💬</h1>
-        </header>
-        
-        <ul id="messages"></ul>
 
-        <form id="form" action="">
-            <input id="input" autocomplete="off" placeholder="Type a message..." required />
-            <button>Send</button>
-        </form>
+    <div class="container py-4" style="max-width: 600px;">
+        <div class="card shadow border-0 rounded-4">
+            <div class="card-header bg-primary text-white py-3 rounded-top-4">
+                <h3 class="card-title mb-0 d-flex align-items-center gap-2 fs-4">
+                    <span>Chatty 💬</span>
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <div id="messages" class="d-flex flex-column"></div>
+            </div>
+
+            <div class="card-footer bg-white border-top-0 py-3 rounded-bottom-4">
+                <form id="form" class="d-flex gap-2">
+                    <input id="input" class="form-control rounded-pill px-3" autocomplete="off" placeholder="Type a message..." required />
+                    <button class="btn btn-primary rounded-pill px-4 fw-semibold">Send</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Connect automatically to the current website domain
         const socket = io();
 
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
 
-        // Ask for username when entering the site
+        // Prompt for nickname
         const username = prompt("Enter your name to join Chatty:") || "Anonymous";
 
-        // --- Ask for permission to show notifications as soon as they log in ---
+        // Request Browser Notification Permission
         if ("Notification" in window) {
             Notification.requestPermission();
         }
@@ -44,33 +82,34 @@
                     user: username,
                     text: input.value
                 };
-                // Send message data to server
                 socket.emit('chat message', data);
                 input.value = '';
             }
         });
 
-        // Listen for incoming broadcasted messages from server
         socket.on('chat message', function(data) {
-            const item = document.createElement('li');
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('d-flex', 'w-100', 'mb-2');
+
+            const item = document.createElement('div');
+            item.classList.add('msg-bubble');
             
-            // Highlight our own messages differently
             if(data.user === username) {
-                item.classList.add('my-message');
+                wrapper.classList.add('justify-content-end');
+                item.classList.add('my-msg');
             } else {
-                item.classList.add('other-message');
+                wrapper.classList.add('justify-content-start');
+                item.classList.add('other-msg');
             }
 
-            item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
-            messages.appendChild(item);
+            item.innerHTML = `<strong class="d-block small mb-1 ${data.user === username ? 'text-white-50' : 'text-muted'}">${data.user}</strong>${data.text}`;
+            wrapper.appendChild(item);
+            messages.appendChild(wrapper);
             
-            // Smoothly auto-scroll to the latest message
-            window.scrollTo(0, document.body.scrollHeight);
+            // Auto scroll down
+            messages.scrollTop = messages.scrollHeight;
 
-            // --- Send a system notification only if: ---
-            // 1. You are looking at a different tab (document.hidden)
-            // 2. You clicked "Allow" (Notification.permission === "granted")
-            // 3. The message was sent by someone else (data.user !== username)
+            // Trigger Notification
             if (document.hidden && Notification.permission === "granted" && data.user !== username) {
                 new Notification(`New message from ${data.user}`, {
                     body: data.text,
